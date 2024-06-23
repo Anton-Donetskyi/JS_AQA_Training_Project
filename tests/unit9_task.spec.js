@@ -1,9 +1,29 @@
 import {test, expect} from '@playwright/test';
 
+/**
+* Test 1 - Perform Login:
+* 1. Perform login using "standard_user"
+* 2. On the opened page verify: 
+*   Products (1) title is displayed
+*   Shopping Cart icon (2) is displayed
+*   More than 1 product (3) is displayed
+*/
+
+/**
+* Test 2 - Add product to the cart:
+* 1. Perform login using "standard_user"
+* 2. Add the first product to the cart by clicking Add to Cart button
+* 3. Verify Shopping Cart icon contains the number of products added (equal 1)
+* 4. Open the Shopping Cart and verify the added product is displayed 
+*    (the data should be taken from the Products page and used here to as an expected result)
+* 5. Remove the product by clicking Remove
+* 6. Verify no products are available in the Shopping Cart
+*/
+
 test.describe('Check Products title and Add Products to the cart', () => {
 
     test.beforeEach('Login as standart_user', async ({ page }) => {
-        await page.goto('https://www.saucedemo.com/');
+        await page.goto('');
         await page.getByPlaceholder('Username').fill('standard_user');
         await page.getByPlaceholder('Password').fill('secret_sauce');
         await page.getByTestId('login-button').click();
@@ -25,22 +45,32 @@ test.describe('Check Products title and Add Products to the cart', () => {
 
     test('Test 2 - Add product to the cart', async ({ page }) => {
 
-        const listOfProducts = await page.locator('[data-test="inventory-item"]').all();
-        const firstProductItemTitle = await listOfProducts[0].locator('.inventory_item_name').innerText()
+        // Get the first product item.
+        const firstProductItem = page.locator('[data-test="inventory-item"]').nth(0);
 
-        //await listOfProducts[0].getByRole('button', { name: 'Add to Cart' }).click();
-        // more universal as I understood
-        await listOfProducts[0].locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
+        // Get the title of the first product item.
+        const firstProductItemTitle = await firstProductItem.locator('.inventory_item_name').innerText();
 
+        // Click to add product to the shopping cart.
+        await firstProductItem.locator('[data-test*="add-to-cart"]').click();
+
+        // Expects the shopping cart counter to equal the number of products added
         await expect(page.getByTestId('shopping-cart-badge')).toHaveText('1');
+
+        // Click to open the shopping cart page
         await page.getByTestId('shopping-cart-badge').click();
 
-        const cartItems = await page.locator('.cart_item').all();
-        const cartItemTitle = await cartItems[0].locator('.inventory_item_name').innerText();
-        expect(cartItemTitle).toBe(firstProductItemTitle);
-        await cartItems[0].getByTestId('remove-sauce-labs-backpack').click();
-        //await expect(cartItems).toHaveLength(0);
-        expect(await page.locator('.cart_item').count()).toEqual(0);
+        // Get the first cart item and its title
+        const firstCartItem = page.locator('.cart_item').nth(0);
+        const firstCartItemTitle = await firstCartItem.locator('.inventory_item_name').innerText();
 
+        // Expects the first cart item to be the added product
+        expect(firstCartItemTitle).toBe(firstProductItemTitle);
+
+        // Click to remove the product from the cart
+        await firstCartItem.locator('[data-test*="remove"]').click();
+
+        // Expects the product was removed and cart is empty
+        await expect(page.locator('.cart_item')).toHaveCount(0);
     })
 })
